@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 
 # Create your models here.
 class AppointmentService(models.Model):
@@ -20,7 +21,7 @@ class AppointmentService(models.Model):
     voided_by = models.IntegerField(blank=True, null=True)
     date_voided = models.DateTimeField(blank=True, null=True)
     void_reason = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     initial_appointment_status = models.CharField(max_length=45, blank=True, null=True)
 
     class Meta:
@@ -41,7 +42,7 @@ class AppointmentServiceType(models.Model):
     voided_by = models.IntegerField(blank=True, null=True)
     date_voided = models.DateTimeField(blank=True, null=True)
     void_reason = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
 
     class Meta:
         # managed = False
@@ -55,7 +56,7 @@ class AppointmentServiceWeeklyAvailability(models.Model):
     start_time = models.TimeField(blank=True, null=True)
     end_time = models.TimeField(blank=True, null=True)
     max_appointments_limit = models.IntegerField(blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     voided = models.IntegerField(blank=True, null=True)
     voided_by = models.ForeignKey('Users', models.DO_NOTHING, db_column='voided_by', blank=True, null=True)
     date_voided = models.DateTimeField(blank=True, null=True)
@@ -77,7 +78,7 @@ class AppointmentSpeciality(models.Model):
     creator = models.IntegerField()
     date_changed = models.DateTimeField(blank=True, null=True)
     changed_by = models.IntegerField(blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     voided = models.IntegerField(blank=True, null=True)
 
     class Meta:
@@ -97,7 +98,7 @@ class PatientAppointment(models.Model):
     location = models.ForeignKey('Location', models.DO_NOTHING, blank=True, null=True)
     appointment_kind = models.CharField(max_length=45, db_comment='scheduled, walk in')
     comments = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     date_created = models.DateTimeField()
     creator = models.IntegerField()
     date_changed = models.DateTimeField(blank=True, null=True)
@@ -118,7 +119,7 @@ class PatientAppointment(models.Model):
 class PatientAppointmentAudit(models.Model):
     patient_appointment_audit_id = models.AutoField(primary_key=True)
     appointment = models.ForeignKey(PatientAppointment, models.DO_NOTHING)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     date_created = models.DateTimeField()
     creator = models.IntegerField()
     date_changed = models.DateTimeField(blank=True, null=True)
@@ -158,7 +159,7 @@ class PatientAppointmentProvider(models.Model):
     voided_by = models.IntegerField(blank=True, null=True)
     date_voided = models.DateTimeField(blank=True, null=True)
     void_reason = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
 
     class Meta:
         # managed = False

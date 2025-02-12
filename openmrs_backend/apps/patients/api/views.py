@@ -10,6 +10,15 @@ from apps.patients.models.users import Users
 class SankofiaTokenObtainPairView(TokenObtainPairView):
   serializer_class = api_serializer.SankofiaTokenObtainPairSerializer
 
+@api_view(['POST'])
+def user_create(request):
+  if request.method == 'POST':
+    serializer = UsersSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['GET','PUT', 'DELETE'])  
 def user_detail(request, id):
   try:

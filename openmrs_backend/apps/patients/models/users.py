@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from .patients import Person
+from .person import Person
+import uuid
 
 # Create your models here.
 
@@ -9,48 +10,48 @@ class UsersManager(BaseUserManager):
         if not email:
             raise ValueError("Email is required")
         email = self.normalize_email(email)
-        person_data = extra_fields.get('person_data', {})
-        person = Person.objects.create(
-            gender=person_data.get('gender', ''),
-            **person_data
-        )
+
+        if 'person' not in extra_fields:
+            person = Person.objects.create(gender='')
+            extra_fields['person'] = person
+
         user = self.model(email=email, **extra_fields)
         user.set_password(password)  # Django Default password encryption
-        user.person = person
         user.save(using=self._db)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+
         return self.create_user(email, password, **extra_fields)
 
 class Users(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
-    system_id = models.CharField(max_length=50)
+    system_id = models.CharField(max_length=50, default='')
     username = models.CharField(max_length=50, blank=True, null=True, unique=True)
     password = models.CharField(max_length=128, blank=True, null=True)
     salt = models.CharField(max_length=128, blank=True, null=True)
-    secret_question = models.CharField(max_length=255, blank=True, null=True)
-    secret_answer = models.CharField(max_length=255, blank=True, null=True)
+    secret_question = models.CharField(max_length=255, blank=True, null=True, default=None)
+    secret_answer = models.CharField(max_length=255, blank=True, null=True, default=None)
     creator = models.ForeignKey('self', models.DO_NOTHING, db_column='creator', to_field='user_id', blank=True, null=True, related_name='users_creator')
     date_created = models.DateTimeField(auto_now_add=True)
     changed_by = models.ForeignKey(
         'self', models.DO_NOTHING, db_column='changed_by',
         related_name='users_changed_by_set', blank=True, null=True
     )
-    date_changed = models.DateTimeField(blank=True, null=True)
-    person = models.ForeignKey('Person', models.DO_NOTHING)
+    date_changed = models.DateTimeField(blank=True, null=True, default=None)
+    person = models.ForeignKey('Person', models.DO_NOTHING, db_column='person_id', to_field='person_id')
     retired = models.IntegerField(default=0)
     retired_by = models.ForeignKey(
         'self', models.DO_NOTHING, db_column='retired_by',
         related_name='users_retired_by_set', blank=True, null=True
     )
-    date_retired = models.DateTimeField(blank=True, null=True)
-    retire_reason = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(max_length=38)
-    activation_key = models.CharField(max_length=255, blank=True, null=True)
-    email = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    date_retired = models.DateTimeField(blank=True, null=True, default=None)
+    retire_reason = models.CharField(max_length=255, blank=True, null=True, default=None)
+    uuid = models.CharField(max_length=38, default=uuid.uuid4)
+    activation_key = models.CharField(max_length=255, blank=True, null=True, default=None)
+    email = models.CharField(unique=True, max_length=255, blank=True, null=True, default=None)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -80,7 +81,7 @@ class UserProperty(models.Model):
 class Role(models.Model):
     role = models.CharField(primary_key=True, max_length=50)
     description = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
 
     class Meta:
         # managed = False
@@ -98,7 +99,7 @@ class UserRole(models.Model):
 class Privilege(models.Model):
     privilege = models.CharField(primary_key=True, max_length=255)
     description = models.TextField(blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
 
     class Meta:
         # # managed = False
@@ -118,7 +119,7 @@ class Provider(models.Model):
     retired_by = models.ForeignKey('Users', models.DO_NOTHING, db_column='retired_by', related_name='provider_retired_by_set', blank=True, null=True)
     date_retired = models.DateTimeField(blank=True, null=True)
     retire_reason = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     role = models.ForeignKey('Concept', models.DO_NOTHING, blank=True, null=True)
     speciality = models.ForeignKey('Concept', models.DO_NOTHING, related_name='provider_speciality_set', blank=True, null=True)
 
@@ -132,7 +133,7 @@ class ProviderAttribute(models.Model):
     provider = models.ForeignKey(Provider, models.DO_NOTHING)
     attribute_type = models.ForeignKey('ProviderAttributeType', models.DO_NOTHING)
     value_reference = models.TextField()
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
     creator = models.ForeignKey('Users', models.DO_NOTHING, db_column='creator')
     date_created = models.DateTimeField()
     changed_by = models.ForeignKey('Users', models.DO_NOTHING, db_column='changed_by', related_name='providerattribute_changed_by_set', blank=True, null=True)
@@ -165,7 +166,7 @@ class ProviderAttributeType(models.Model):
     retired_by = models.ForeignKey('Users', models.DO_NOTHING, db_column='retired_by', related_name='providerattributetype_retired_by_set', blank=True, null=True)
     date_retired = models.DateTimeField(blank=True, null=True)
     retire_reason = models.CharField(max_length=255, blank=True, null=True)
-    uuid = models.CharField(unique=True, max_length=38)
+    uuid = models.CharField(unique=True, max_length=38, default=uuid.uuid4)
 
     class Meta:
         # managed = False
