@@ -29,13 +29,10 @@ class UsersSerializer(serializers.ModelSerializer):
         }
         
     def create(self, validated_data):
-        email = validated_data.pop('email')
-        password = validated_data.pop('password')
 
         user = Users.objects.create_user(
-            email=email,
-            password=password,
-            **validated_data
+            email=validated_data.get('email'),
+            password=validated_data.get('password')
         )
 
         return user

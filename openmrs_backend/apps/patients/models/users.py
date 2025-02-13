@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from .person import Person
 import uuid
@@ -11,15 +11,22 @@ class UsersManager(BaseUserManager):
             raise ValueError("Email is required")
         email = self.normalize_email(email)
 
-        if 'person' not in extra_fields:
-            person = Person.objects.create(gender='')
-            person.save()
-            extra_fields['person'] = person
+        try:
+            with transaction.atomic():  # Start a transaction block
+                if 'person' not in extra_fields:
+                    person = Person.objects.create(gender='')
+                    person.save()
+                    extra_fields['person'] = person
 
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)  # Django Default password encryption
-        user.save(using=self._db)
-        return user
+                user = self.model(email=email, **extra_fields)
+                user.set_password(password)  # Django default password encryption
+                user.save(using=self._db)
+            
+            return user  # Commit if no error occurs
+        
+        except Exception as e:
+            # Log the error, or raise a more specific exception if needed
+            raise ValueError(f"An error occurred during user creation: {str(e)}")
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
