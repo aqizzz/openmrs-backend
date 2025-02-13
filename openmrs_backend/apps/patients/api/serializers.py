@@ -23,17 +23,14 @@ class UsersSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Users
-        exclude = ['person']
+        fields = '__all__'
+        extra_kwargs = {
+            'person': {'required': False, 'read_only': True} 
+        }
         
     def create(self, validated_data):
         email = validated_data.pop('email')
         password = validated_data.pop('password')
-
-        person = Person.objects.create(gender='')
-        person.save()
-        
-        validated_data['person'] = person
-        
 
         user = Users.objects.create_user(
             email=email,

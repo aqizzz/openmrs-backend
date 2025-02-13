@@ -13,6 +13,7 @@ class UsersManager(BaseUserManager):
 
         if 'person' not in extra_fields:
             person = Person.objects.create(gender='')
+            person.save()
             extra_fields['person'] = person
 
         user = self.model(email=email, **extra_fields)
@@ -63,7 +64,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
             return str(self.user_id)
-    
+
     class Meta:
         # managed = False
         db_table = 'users'
